@@ -1,11 +1,12 @@
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
 {
-    public Text playerText, dealerText, resultText;
-    public Button hitButton, standButton, restartButton;
+    public TextMeshPro playerText, dealerText, resultText;
+    public ThreeDButton hitButton, standButton, restartButton;
 
     private Deck deck;
     private List<Card> playerHand, dealerHand;
