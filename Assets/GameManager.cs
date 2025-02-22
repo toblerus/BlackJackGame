@@ -26,6 +26,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private List<GameObject> spawnedCards;
     [SerializeField] private int minScareDuration, maxScareDuration;
     [SerializeField] private GameObject jumpScare;
+    [SerializeField] private HealthModel healthModel;
 
 
     private bool blockInputs = false;
@@ -46,6 +47,11 @@ public class GameManager : MonoBehaviour
 
     async Task StartGameAsync()
     {
+        hitButton.gameObject.SetActive(true);
+        standButton.gameObject.SetActive(true);
+        restartButton.gameObject.SetActive(false);
+
+
         deck = new Deck();
         playerHand = new List<Card>();
         dealerHand = new List<Card>();
@@ -79,10 +85,12 @@ public class GameManager : MonoBehaviour
 
         if (playerScore > 21)
         {
-            resultText.text = "Bust! Dealer Wins!";
+            resultText.text = "Bust. Dealer Wins.";
+            healthModel.TakeDamage(Actor.Player);
             ShowJumpScare();
             EndGame();
         }
+        CheckBlackjack();
     }
 
     private void PlayerStandWrapper()
@@ -108,8 +116,8 @@ public class GameManager : MonoBehaviour
         playerScore = CalculateScore(playerHand);
         dealerScore = CalculateScore(dealerHand);
 
-        playerText.text = "Player: " + playerScore;
-        dealerText.text = "Dealer: " + dealerScore;
+        playerText.text = playerScore.ToString();
+        dealerText.text = dealerScore.ToString();
     }
 
     int CalculateScore(List<Card> hand)
@@ -136,7 +144,8 @@ public class GameManager : MonoBehaviour
     {
         if (playerScore == 21)
         {
-            resultText.text = "Blackjack! You Win!";
+            resultText.text = "Blackjack. You Win.";
+            healthModel.TakeDamage(Actor.Dealer);
             EndGame();
         }
     }
@@ -145,16 +154,18 @@ public class GameManager : MonoBehaviour
     {
         if (dealerScore > 21 || playerScore > dealerScore)
         {
-            resultText.text = "You Win!";
+            resultText.text = "You Win.";
+            healthModel.TakeDamage(Actor.Dealer);
         }
         else if (playerScore < dealerScore)
         {
-            resultText.text = "Dealer Wins!";
+            resultText.text = "Dealer Wins.";
+            healthModel.TakeDamage(Actor.Player);
             ShowJumpScare();
         }
         else
         {
-            resultText.text = "Push!";
+            resultText.text = "Push.";
         }
 
         EndGame();
@@ -170,6 +181,12 @@ public class GameManager : MonoBehaviour
     void EndGame()
     {
         gameOver = true;
+
+        hitButton.gameObject.SetActive(false);
+        standButton.gameObject.SetActive(false);
+        restartButton.gameObject.SetActive(true);
+
+        if (healthModel.IsActorDead(Actor.Player)) ;
     }
 
     private async Task AddCard(List<Card> hand, Card card, Transform display)
@@ -180,10 +197,8 @@ public class GameManager : MonoBehaviour
         spawnedCards.Add(cardInstance);
         cardInstance.GetComponent<CardView>().SetImage(card);
 
-        // Assuming the card's Image component is a child of the cardInstance
         RectTransform cardImage = cardInstance.transform.GetChild(0).GetComponent<RectTransform>(); // Use RectTransform
 
-        // Convert spawnPoint world position to local canvas space
         Canvas canvas = display.GetComponentInParent<Canvas>();
         RectTransform canvasRect = canvas.GetComponent<RectTransform>();
 
@@ -198,18 +213,14 @@ public class GameManager : MonoBehaviour
 
         Vector3 canvasStartPosition = new Vector3(localPoint.x, localPoint.y, 0);
 
-        // Set starting position for the animation
         Vector3 endPosition = cardImage.localPosition;
 
-        // Temporarily move the image to the starting position
         cardImage.anchoredPosition = canvasStartPosition;
 
-        // Animate the card image to its final position
         await cardImage.DOAnchorPos(endPosition, 0.5f).SetEase(Ease.OutQuad).AsyncWaitForCompletion();
 
         UpdateScores();
 
-        // Delay for 2 seconds after the animation
         await Task.Delay(500);
         blockInputs = false;
     }
