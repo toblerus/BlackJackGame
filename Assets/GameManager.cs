@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using DG.Tweening; // Add this for DOTween
 
 public class GameManager : MonoBehaviour
 {
@@ -12,6 +13,13 @@ public class GameManager : MonoBehaviour
     private List<Card> playerHand, dealerHand;
     private int playerScore, dealerScore;
     private bool gameOver;
+
+    [SerializeField] private Transform spawnPoint;
+
+    [SerializeField] private Transform dealerCardDisplay;
+    [SerializeField] private Transform playerCardDisplay;
+    [SerializeField] private GameObject cardPrefab;
+    [SerializeField] private List<GameObject> spawnedCards;
 
     void Start()
     {
@@ -31,9 +39,12 @@ public class GameManager : MonoBehaviour
         gameOver = false;
         resultText.text = "";
 
-        playerHand.Add(deck.DrawCard());
-        playerHand.Add(deck.DrawCard());
-        dealerHand.Add(deck.DrawCard());
+        spawnedCards.ForEach(cardObject => Destroy(cardObject));
+        spawnedCards.Clear();
+
+        AddCard(playerHand, deck.DrawCard(), playerCardDisplay);
+        AddCard(playerHand, deck.DrawCard(), playerCardDisplay);
+        AddCard(dealerHand, deck.DrawCard(), dealerCardDisplay);
 
         UpdateScores();
         CheckBlackjack();
@@ -43,7 +54,8 @@ public class GameManager : MonoBehaviour
     {
         if (gameOver) return;
 
-        playerHand.Add(deck.DrawCard());
+        AddCard(playerHand, deck.DrawCard(), playerCardDisplay);
+
         UpdateScores();
 
         if (playerScore > 21)
@@ -59,7 +71,7 @@ public class GameManager : MonoBehaviour
 
         while (dealerScore < 17)
         {
-            dealerHand.Add(deck.DrawCard());
+            AddCard(dealerHand, deck.DrawCard(), dealerCardDisplay);
             UpdateScores();
         }
 
@@ -125,5 +137,25 @@ public class GameManager : MonoBehaviour
     void EndGame()
     {
         gameOver = true;
+    }
+
+    private void AddCard(List<Card> hand, Card card, Transform display)
+    {
+        hand.Add(card);
+        var cardInstance = Instantiate(cardPrefab, display);
+        spawnedCards.Add(cardInstance);
+        cardInstance.GetComponent<CardView>().SetImage(card);
+
+        // Assuming the card's Image component is a child of the cardInstance
+        Transform cardImage = cardInstance.transform.GetChild(0); // Adjust if needed based on your hierarchy
+
+        // Set starting position for the animation
+        Vector3 endPosition = cardImage.localPosition; // Local position within parent (layout group)
+
+        // Temporarily move the image to the starting position
+        cardImage.localPosition = spawnPoint.position;
+
+        // Animate the card image to its final position
+        cardImage.DOLocalMove(endPosition, 0.5f).SetEase(Ease.OutQuad);
     }
 }
