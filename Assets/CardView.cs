@@ -9,6 +9,9 @@ public class CardView : MonoBehaviour
     public Sprite[] clubSprites;
     public Sprite[] spadeSprites;
 
+    public WorldSpaceCanvasButton button;
+    private CardHighlightComponent cardPreview;
+
     private void Awake()
     {
         // No automatic sprite loading here. Assign sprites manually in the Inspector.
@@ -16,7 +19,17 @@ public class CardView : MonoBehaviour
         {
             Debug.LogWarning("Some suit sprite arrays are empty. Assign them manually in the Inspector.");
         }
+
     }
+
+    private void Start()
+    {
+        cardPreview = FindObjectOfType<CardHighlightComponent>();
+
+        button.onHoverEnter.AddListener(() => cardPreview.SetImage(cardImage.sprite));
+        button.onHoverExit.AddListener(() => cardPreview.Hide());
+    }
+
 
     public void SetImage(Card card)
     {

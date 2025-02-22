@@ -3,11 +3,15 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using DG.Tweening; // Add this for DOTween
+using System.Threading.Tasks;
+using System;
+using Random = UnityEngine.Random;
+using Unity.VisualScripting;
 
 public class GameManager : MonoBehaviour
 {
     public TextMeshPro playerText, dealerText, resultText;
-    public ThreeDButton hitButton, standButton, restartButton;
+    public Button hitButton, standButton, restartButton;
 
     private Deck deck;
     private List<Card> playerHand, dealerHand;
@@ -20,16 +24,27 @@ public class GameManager : MonoBehaviour
     [SerializeField] private Transform playerCardDisplay;
     [SerializeField] private GameObject cardPrefab;
     [SerializeField] private List<GameObject> spawnedCards;
+    [SerializeField] private int minScareDuration, maxScareDuration;
+    [SerializeField] private GameObject jumpScare;
+
+
+    private bool blockInputs = false;
 
     void Start()
     {
-        restartButton.onClick.AddListener(StartGame);
-        hitButton.onClick.AddListener(PlayerHit);
-        standButton.onClick.AddListener(PlayerStand);
-        StartGame();
+        restartButton.onClick.AddListener(StartWrapper);
+        hitButton.onClick.AddListener(PlayerHitWrapper);
+        standButton.onClick.AddListener(PlayerStandWrapper);
+        _ = StartGameAsync();
     }
 
-    void StartGame()
+    private void StartWrapper()
+    {
+        if (!blockInputs)
+            _ = StartGameAsync();
+    }
+
+    async Task StartGameAsync()
     {
         deck = new Deck();
         playerHand = new List<Card>();
@@ -42,37 +57,47 @@ public class GameManager : MonoBehaviour
         spawnedCards.ForEach(cardObject => Destroy(cardObject));
         spawnedCards.Clear();
 
-        AddCard(playerHand, deck.DrawCard(), playerCardDisplay);
-        AddCard(playerHand, deck.DrawCard(), playerCardDisplay);
-        AddCard(dealerHand, deck.DrawCard(), dealerCardDisplay);
+        await AddCard(playerHand, deck.DrawCard(), playerCardDisplay);
+        await AddCard(playerHand, deck.DrawCard(), playerCardDisplay);
+        await AddCard(dealerHand, deck.DrawCard(), dealerCardDisplay);
 
-        UpdateScores();
         CheckBlackjack();
     }
 
-    void PlayerHit()
+    private void PlayerHitWrapper()
+    {
+        if (!blockInputs)
+            _ = PlayerHitAsync();
+    }
+
+    async Task PlayerHitAsync()
     {
         if (gameOver) return;
 
-        AddCard(playerHand, deck.DrawCard(), playerCardDisplay);
+        await AddCard(playerHand, deck.DrawCard(), playerCardDisplay);
 
-        UpdateScores();
 
         if (playerScore > 21)
         {
             resultText.text = "Bust! Dealer Wins!";
+            ShowJumpScare();
             EndGame();
         }
     }
 
-    void PlayerStand()
+    private void PlayerStandWrapper()
+    {
+        if (!blockInputs)
+            _ = PlayerStandAsync();
+    }
+
+    async Task PlayerStandAsync()
     {
         if (gameOver) return;
 
         while (dealerScore < 17)
         {
-            AddCard(dealerHand, deck.DrawCard(), dealerCardDisplay);
-            UpdateScores();
+            await AddCard(dealerHand, deck.DrawCard(), dealerCardDisplay);
         }
 
         DetermineWinner();
@@ -125,6 +150,7 @@ public class GameManager : MonoBehaviour
         else if (playerScore < dealerScore)
         {
             resultText.text = "Dealer Wins!";
+            ShowJumpScare();
         }
         else
         {
@@ -134,28 +160,58 @@ public class GameManager : MonoBehaviour
         EndGame();
     }
 
+    private async void ShowJumpScare()
+    {
+        jumpScare.SetActive(true);
+        await Task.Delay(Random.Range(minScareDuration,maxScareDuration));
+        jumpScare.SetActive(false);
+    }
+
     void EndGame()
     {
         gameOver = true;
     }
 
-    private void AddCard(List<Card> hand, Card card, Transform display)
+    private async Task AddCard(List<Card> hand, Card card, Transform display)
     {
+        blockInputs = true;
         hand.Add(card);
         var cardInstance = Instantiate(cardPrefab, display);
         spawnedCards.Add(cardInstance);
         cardInstance.GetComponent<CardView>().SetImage(card);
 
         // Assuming the card's Image component is a child of the cardInstance
-        Transform cardImage = cardInstance.transform.GetChild(0); // Adjust if needed based on your hierarchy
+        RectTransform cardImage = cardInstance.transform.GetChild(0).GetComponent<RectTransform>(); // Use RectTransform
+
+        // Convert spawnPoint world position to local canvas space
+        Canvas canvas = display.GetComponentInParent<Canvas>();
+        RectTransform canvasRect = canvas.GetComponent<RectTransform>();
+
+        Vector2 screenPoint = RectTransformUtility.WorldToScreenPoint(Camera.main, spawnPoint.position);
+
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(
+            canvasRect,
+            screenPoint,
+            canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : Camera.main,
+            out Vector2 localPoint
+        );
+
+        Vector3 canvasStartPosition = new Vector3(localPoint.x, localPoint.y, 0);
 
         // Set starting position for the animation
-        Vector3 endPosition = cardImage.localPosition; // Local position within parent (layout group)
+        Vector3 endPosition = cardImage.localPosition;
 
         // Temporarily move the image to the starting position
-        cardImage.localPosition = spawnPoint.position;
+        cardImage.anchoredPosition = canvasStartPosition;
 
         // Animate the card image to its final position
-        cardImage.DOLocalMove(endPosition, 0.5f).SetEase(Ease.OutQuad);
+        await cardImage.DOAnchorPos(endPosition, 0.5f).SetEase(Ease.OutQuad).AsyncWaitForCompletion();
+
+        UpdateScores();
+
+        // Delay for 2 seconds after the animation
+        await Task.Delay(500);
+        blockInputs = false;
     }
+
 }
