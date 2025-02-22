@@ -3,10 +3,9 @@ using DG.Tweening;
 
 public class CameraBreathing : MonoBehaviour
 {
-    [Header("Breathing Settings")]
-    public float positionAmplitude = 0.03f; // Movement amplitude (position)
-    public float rotationAmplitude = 0.5f;  // Rotation amplitude in degrees
-    public float duration = 4f;             // Time for a full breath cycle
+    public float positionAmplitude = 0.03f; 
+    public float rotationAmplitude = 0.5f;  
+    public float duration = 4f;             
     public Ease ease = Ease.InOutSine;
 
     private Vector3 initialPosition;
@@ -21,12 +20,10 @@ public class CameraBreathing : MonoBehaviour
 
     void StartBreathing()
     {
-        // Position Tween (subtle 3D movement)
         transform.DOLocalMove(initialPosition + new Vector3(positionAmplitude, positionAmplitude, 0), duration / 2)
             .SetLoops(-1, LoopType.Yoyo)
             .SetEase(ease);
 
-        // Rotation Tween (adds gentle tilt)
         transform.DOLocalRotate(initialRotation + new Vector3(rotationAmplitude, 0, rotationAmplitude), duration / 2)
             .SetLoops(-1, LoopType.Yoyo)
             .SetEase(ease);

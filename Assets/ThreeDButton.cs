@@ -7,7 +7,6 @@ public class ThreeDButton : MonoBehaviour
     private Color originalColor;
     private bool isHovered = false;
 
-    // UnityEvent for onClick and onHover
     public UnityEvent onClick;
     public UnityEvent onHoverEnter;
     public UnityEvent onHoverExit;

@@ -14,12 +14,10 @@ public class CardView : MonoBehaviour
 
     private void Awake()
     {
-        // No automatic sprite loading here. Assign sprites manually in the Inspector.
         if (heartSprites.Length == 0 || diamondSprites.Length == 0 || clubSprites.Length == 0 || spadeSprites.Length == 0)
         {
             Debug.LogWarning("Some suit sprite arrays are empty. Assign them manually in the Inspector.");
         }
-
     }
 
     private void Start()
@@ -92,7 +90,7 @@ public class CardView : MonoBehaviour
             case "J": return 10;
             case "Q": return 11;
             case "K": return 12;
-            case "Special1": return 13; // Replace with actual special names
+            case "Special1": return 13;
             case "Special2": return 14;
             default: return -1;
         }

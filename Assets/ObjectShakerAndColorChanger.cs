@@ -3,11 +3,11 @@ using DG.Tweening;
 
 public class ObjectShakerAndColorChanger : MonoBehaviour
 {
-    public Transform objectA; // The object to shake
-    public SpriteRenderer objectB; // The object to change color
+    public Transform objectA;
+    public SpriteRenderer objectB;
 
     public float shakeStrength = 0.5f;
-    public float shakeFrequency = 0.02f; // Time between shake updates
+    public float shakeFrequency = 0.02f;
     public float colorChangeInterval = 0.05f;
 
     private Vector3 originalPosition;

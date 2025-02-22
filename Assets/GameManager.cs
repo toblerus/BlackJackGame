@@ -2,11 +2,12 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using DG.Tweening; // Add this for DOTween
+using DG.Tweening;
 using System.Threading.Tasks;
 using System;
 using Random = UnityEngine.Random;
 using Unity.VisualScripting;
+using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
@@ -33,6 +34,8 @@ public class GameManager : MonoBehaviour
 
     void Start()
     {
+        Cursor.lockState = CursorLockMode.Confined;
+
         restartButton.onClick.AddListener(StartWrapper);
         hitButton.onClick.AddListener(PlayerHitWrapper);
         standButton.onClick.AddListener(PlayerStandWrapper);
@@ -87,7 +90,7 @@ public class GameManager : MonoBehaviour
         {
             resultText.text = "Bust. Dealer Wins.";
             healthModel.TakeDamage(Actor.Player);
-            ShowJumpScare();
+            await ShowJumpScare();
             EndGame();
         }
         CheckBlackjack();
@@ -108,7 +111,7 @@ public class GameManager : MonoBehaviour
             await AddCard(dealerHand, deck.DrawCard(), dealerCardDisplay);
         }
 
-        DetermineWinner();
+        DetermineWinnerAsync();
     }
 
     void UpdateScores()
@@ -150,7 +153,7 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    void DetermineWinner()
+    async Task DetermineWinnerAsync()
     {
         if (dealerScore > 21 || playerScore > dealerScore)
         {
@@ -161,7 +164,7 @@ public class GameManager : MonoBehaviour
         {
             resultText.text = "Dealer Wins.";
             healthModel.TakeDamage(Actor.Player);
-            ShowJumpScare();
+            await ShowJumpScare();
         }
         else
         {
@@ -171,11 +174,11 @@ public class GameManager : MonoBehaviour
         EndGame();
     }
 
-    private async void ShowJumpScare()
+    private async Task ShowJumpScare()
     {
         jumpScare.SetActive(true);
         await Task.Delay(Random.Range(minScareDuration,maxScareDuration));
-        jumpScare.SetActive(false);
+        jumpScare?.SetActive(false);
     }
 
     void EndGame()
@@ -186,7 +189,9 @@ public class GameManager : MonoBehaviour
         standButton.gameObject.SetActive(false);
         restartButton.gameObject.SetActive(true);
 
-        if (healthModel.IsActorDead(Actor.Player)) ;
+        if (healthModel.IsActorDead(Actor.Player) || healthModel.IsActorDead(Actor.Dealer))
+            SceneManager.LoadScene("MenuScene", LoadSceneMode.Single);
+
     }
 
     private async Task AddCard(List<Card> hand, Card card, Transform display)

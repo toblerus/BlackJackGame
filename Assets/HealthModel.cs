@@ -43,6 +43,7 @@ public class HealthModel : MonoBehaviour
             case Actor.Player:
                 if(CurrentHealthPlayer >= 1)
                 {
+                    CurrentHealthPlayer--;
                     var heart = PlayerHearts[0];
                     PlayerHearts.Remove(heart);
                     Destroy(heart);
@@ -51,6 +52,7 @@ public class HealthModel : MonoBehaviour
             case Actor.Dealer:
                 if (CurrentHealthDealer >= 1)
                 {
+                    CurrentHealthDealer--;
                     var heart = DealerHearts[0];
                     DealerHearts.Remove(heart);
                     Destroy(heart);
